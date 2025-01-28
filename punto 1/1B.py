@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 df = pd.read_csv('Rhodium.csv')
 df['Diferencia'] = df["Intensity (mJy)"].diff()
@@ -48,18 +49,35 @@ plt.title('Espectro completo')
 plt.legend()
 plt.tight_layout()
 plt.savefig('espectro completo.pdf')
-plt.show() 
+plt.show()
 
-plt.figure(figsize=(10, 6))
-plt.plot(picos["Wavelength (pm)"], picos["Intensity (mJy)"], label='Picos', color='green', linestyle='--')
+def gauss(x, a, x0, sigma):
+    return a * np.exp(-(x - x0)**2 / (2 * sigma**2))
+
+x_picos1=picos["Wavelength (pm)"].iloc[15:35]
+y_picos1=picos["Intensity (mJy)"].iloc[15:35]
+x_picos2=picos["Wavelength (pm)"].iloc[50:90]
+y_picos2=picos["Intensity (mJy)"].iloc[50:90]
+p0_2 = [y_picos2.max(), x_picos2.mean(), 10]
+p0_1 = [y_picos1.max(), x_picos1.mean(), 10]
+popt1, pcov = curve_fit(gauss , x_picos1, y_picos1, p0_1)
+popt2, pcov = curve_fit(gauss , x_picos2, y_picos2, p0_2)
+
+x_fit1 = np.linspace(70, 120, 200)  
+y_fit1 = gauss(x_fit1, *popt1)
+y_fit2 = gauss(x_fit1, *popt2)
+
+print(picos)
+# Graficar los picos detectados
+plt.scatter(picos["Wavelength (pm)"], picos["Intensity (mJy)"], label='Picos detectados', color='green', zorder=5)
+plt.plot(x_fit1, y_fit1, label='picos 1', color='blue')
+plt.plot(x_fit1, y_fit2, label='pico 2', color='red')
 plt.axhline(0, color='black', linestyle=':')
 plt.xlabel('Longitud de onda (pm)')
 plt.ylabel('Intensidad (mJy)')
-plt.title('Picos')
-plt.xlim(0, 300)
+plt.title('Ajuste de picos con Gaussianas')
 plt.legend()
-
-# Guardar la última figura en un archivo PDF
 plt.tight_layout()
-plt.savefig('picos.pdf')
-plt.show() 
+plt.savefig('ajuste_picos_gaussianas.pdf')
+plt.show()
+ 
