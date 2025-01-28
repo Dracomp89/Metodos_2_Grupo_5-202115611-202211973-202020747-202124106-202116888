@@ -1,0 +1,38 @@
+
+def calcular_fwhm(x, y):
+    # Validación: si y está vacío, retornar NaN
+    if len(y) == 0:
+        return np.nan, np.nan, np.nan
+
+    max_index = np.argmax(y)
+    max_value = y[max_index]
+    half_max = max_value / 2
+
+    
+    left_indices = np.where(y[:max_index] <= half_max)[0]
+    right_indices = np.where(y[max_index:] <= half_max)[0]
+
+    
+    if len(left_indices) == 0 or len(right_indices) == 0:
+        return x[max_index], max_value, np.nan
+
+    left = left_indices[-1]
+    right = right_indices[0] + max_index
+    fwhm = x[right] - x[left]
+
+    return x[max_index], max_value, fwhm
+
+
+max_fondo, max_fondo_valor, fwhm_fondo = calcular_fwhm(fondo["Wavelength (pm)"], fondo["Intensity (mJy)"])
+
+
+max_pico, max_pico_valor, fwhm_pico = calcular_fwhm(picos["Wavelength (pm)"], picos["Intensity (mJy)"])
+
+print(f'1.c) Máximo fondo: {max_fondo:.4f} pm, Valor: {max_fondo_valor:.4f} mJy, FWHM: {fwhm_fondo if not np.isnan(fwhm_fondo) else "No disponible"} pm')
+print(f'1.c) Máximo picos: {max_pico:.4f} pm, Valor: {max_pico_valor:.4f} mJy, FWHM: {fwhm_pico if not np.isnan(fwhm_pico) else "No disponible"} pm')
+
+
+energia_total = np.trapz(df_corregido["Intensity (mJy)"], x=df_corregido["Wavelength (pm)"])
+incertidumbre = 0.02 * energia_total
+
+print(f'1.d) Energía total: {energia_total:.4f} mJ·pm, Incertidumbre: ±{incertidumbre:.4f} mJ·pm')
