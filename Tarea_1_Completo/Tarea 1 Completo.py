@@ -161,11 +161,9 @@ print(f'1.d) Energía total: {energia_total:.4f} mJ·pm, Incertidumbre: ±{incer
 
 
 
-from google.colab import drive
-drive.mount('/content/drive')
 
 # Leer el archivo CSV como texto
-archivo = "/content/drive/MyDrive/Colab Notebooks/Métodos Computacionales 2/hysteresis.dat"
+archivo = "hysteresis.dat"
 
 """##**2.a. Datos**"""
 
