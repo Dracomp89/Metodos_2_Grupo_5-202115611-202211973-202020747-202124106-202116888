@@ -116,6 +116,81 @@ plt.tight_layout()
 plt.savefig("1.b.pdf", dpi=300, bbox_inches='tight')
 plt.show()
 
+# c
+
+def datos_prueba(t_max:float, dt:float, amplitudes:NDArray[float],
+ frecuencias:NDArray[float], ruido:float) -> NDArray[float]:
+ ts = np.arange(0.,t_max,dt)
+ ys = np.zeros_like(ts,dtype=float)
+ for A,f in zip(amplitudes,frecuencias):
+     ys += A*np.sin(2*np.pi*f*ts)
+     ys += np.random.normal(loc=0,size=len(ys),scale=ruido) if ruido else 0
+ return ts,ys
+
+def Fourier(t:NDArray[float], y:NDArray[float], f:float) -> complex:
+ return np.sum(y*np.exp(-2j*np.pi*t*f))
+
+columnas = ["Tiempo", "Intensidad", "Incertidumbre"]
+url="https://www.astrouw.edu.pl/ogle/ogle4/OCVS/lmc/cep/phot/I/OGLE-LMC-CEP-0001.dat"
+datos=pd.read_csv(url, delim_whitespace=True, header=None, names=columnas)
+
+fc=np.arange(-0.005,0.005,0.00001)
+F1c=[Fourier(datos["Tiempo"], datos["Intensidad"], f) for f in fc]
+plt.plot(fc,np.abs(F1c))
+plt.title("Transformada de Fourier")
+plt.xlabel("Frecuencia")
+plt.ylabel("Amplitud")
+plt.grid()
+plt.show()
+
+dt_medio = np.median(np.diff(datos["Tiempo"]))  # Mediana de los intervalos de tiempo
+frecuencia_nyquist = 1 / (2 * dt_medio)  # Frecuencia de Nyquist
+
+
+print(f"1.c) f Nyquist: {frecuencia_nyquist}")
+
+def Fourier_multiple(t: NDArray[float], y: NDArray[float], f: NDArray[float]) -> NDArray[complex]:
+    N = len(t)
+    resultados = np.zeros(len(f)) + 0.0j
+    for i, freq in enumerate(f):
+        exp_term = np.exp(-2j * np.pi * t * freq)
+        resultados[i] = np.sum(y * exp_term) / N
+    return resultados
+
+columnas = ["Tiempo", "Intensidad", "Incertidumbre"]
+url = "https://www.astrouw.edu.pl/ogle/ogle4/OCVS/lmc/cep/phot/I/OGLE-LMC-CEP-0001.dat"
+datos = pd.read_csv(url, sep='\s+', header=None, names=columnas)
+
+# Calcular diferencias temporales
+dt_dif = np.diff(datos["Tiempo"].values)
+
+# Centrar la señal
+y_centrada = datos["Intensidad"].values - np.mean(datos["Intensidad"].values)
+
+# Crear espacio de frecuencias
+frecuencias_eval = np.linspace(0, 10, 100000)
+
+# Aplicar transformada de Fourier
+transformada = Fourier_multiple(datos["Tiempo"].values, y_centrada, frecuencias_eval)
+amplitud_transformada = np.abs(transformada)
+
+# Encontrar el pico principal
+pico_index = np.argmax(amplitud_transformada)
+f_true = frecuencias_eval[pico_index]
+print(f"1.c) f true: {f_true}")
+
+# Calcular la fase
+fase = np.mod(f_true * datos["Tiempo"].values, 1)
+
+# Graficar intensidad vs fase
+plt.scatter(fase, y_centrada, s=1, color='blue')
+plt.xlabel("Fase φ")
+plt.ylabel("Intensidad centrada")
+plt.title("Intensidad vs. Fase")
+plt.grid()
+plt.savefig("1.c.pdf")
+plt.show()
+
 # 2. Transformada rápida
 # a
 datos = pd.read_csv("H_field (1).csv", sep=",")
