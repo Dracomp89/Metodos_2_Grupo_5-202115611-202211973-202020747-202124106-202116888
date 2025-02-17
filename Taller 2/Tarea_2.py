@@ -42,9 +42,7 @@ F1=[Fourier(ts1,señal1,f) for f in freq]
 F2=[Fourier(ts2,señal2,f) for f in freq]
 
 plt.scatter(ts1, señal1)
-plt.show()
 plt.scatter(ts2, señal2)
-plt.show()
 
 fig, axs = plt.subplots(2, 1, figsize=(8, 6))  # Dos filas, una columna
 
@@ -61,7 +59,6 @@ axs[1].set_ylabel("Amplitud")
 axs[1].grid()
 plt.tight_layout()  # Ajustar para evitar superposición
 plt.savefig("1.a.pdf", dpi=300, bbox_inches='tight')
-plt.show()
 print("1.a) Se pierde resolución de los picos objetivo")
 #b
 
@@ -93,7 +90,6 @@ for i in tmax:
     plt.xlabel("Frecuencia")
     plt.ylabel("Amplitud")
     plt.grid()
-    plt.show()
 
 print(anchos)
 loga = np.log(anchos)
@@ -117,7 +113,6 @@ plt.legend()
 plt.grid()
 plt.tight_layout() 
 plt.savefig("1.b.pdf", dpi=300, bbox_inches='tight')
-plt.show()
 
 # c
 
@@ -192,7 +187,6 @@ plt.ylabel("Intensidad centrada")
 plt.title("Intensidad vs. Fase")
 plt.grid()
 plt.savefig("1.c.pdf")
-plt.show()
 
 # 2. Transformada rápida
 # a
@@ -257,6 +251,103 @@ plt.grid()
 plt.tight_layout() 
 plt.savefig("2.a.pdf")
 plt.show()
+
+## 2b. Manchas Solares
+### 2b.a. Período del ciclo solar
+
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+# Inicializar listas vacías
+dates = []
+ssn_values = []
+
+# Leer el archivo manualmente
+with open(file_path, "r") as file:
+    lines = file.readlines()
+
+# Extraer fechas y valores de manchas solares
+for line in lines:
+    parts = line.split()
+    if len(parts) != 4:  # Saltar líneas incorrectas
+        continue
+    try:
+        # Convertir los datos numéricos
+        year, month, day, ssn = int(parts[0]), int(parts[1]), int(parts[2]), float(parts[3])
+        date = datetime(year, month, day)
+
+        # Filtrar solo datos hasta el 1 de enero de 2010
+        if date < datetime(2010, 1, 1):
+            dates.append(date)
+            ssn_values.append(ssn)
+
+    except ValueError:
+        continue  # Saltar encabezados o líneas mal formateadas
+
+# Número de datos
+N = len(ssn_values)
+
+# FFT y frecuencias
+fft_data = np.fft.fft(ssn_values)
+freqs = np.fft.fftfreq(N, d=1)  # d=1 asume separación de 1 día
+
+# Usar solo frecuencias positivas
+positive_freqs = freqs[freqs > 0]
+positive_fft = np.abs(fft_data[freqs > 0])
+
+# Graficar FFT en escala log-log
+plt.figure(figsize=(8, 5))
+plt.loglog(positive_freqs, positive_fft)
+plt.xlabel("Frecuencia (1/día)")
+plt.ylabel("Magnitud de la FFT")
+plt.title("Transformada de Fourier de las manchas solares")
+plt.grid()
+
+# Encontrar la frecuencia con mayor magnitud
+dominant_freq = positive_freqs[np.argmax(positive_fft)]
+
+# Convertir a período en años
+P_solar = 1 / dominant_freq / 365.25
+
+print(f"2.b.a) P_solar = {P_solar:.2f} años")
+
+
+
+### 2b.b. Extrapolación con suavizado
+M = min(50, len(Y))  # Asegurar que no excedemos la cantidad de coeficientes
+N = len(y)
+
+# Crear tiempo futuro desde 2012 hasta 2025
+fecha_inicio = df["date"].min()
+dias_desde_inicio = np.array((pd.date_range("2012-01-01", "2025-02-17", freq="D") - fecha_inicio).days)
+
+# Aplicar ventana de suavizado a los armónicos
+ventana = np.exp(-0.01 * np.arange(len(Y)))  # Atenuación exponencial
+Y_suavizado = Y * ventana
+
+# Asegurar que Y_suavizado y freqs tengan la forma correcta
+y_pred = np.real(
+    1/N * np.sum(
+        (Y_suavizado[:M, None] * np.exp(2j * np.pi * freqs[:M, None] * dias_desde_inicio)),
+        axis=0
+    )
+)
+
+# Obtener la predicción del día de entrega (10 de febrero de 2025)
+n_manchas_hoy = y_pred[-1]
+print(f"2.b.b) {n_manchas_hoy = }")
+
+# Graficar los datos originales y la extrapolación
+plt.figure(figsize=(10, 5))
+plt.plot(df["date"], y, label="Datos originales", alpha=0.6)
+plt.plot(pd.to_datetime("2012-01-01") + pd.to_timedelta(dias_desde_inicio, unit="D"), y_pred, label="Predicción suavizada", linestyle="dashed")
+plt.xlabel("Fecha")
+plt.ylabel("Número de manchas solares")
+plt.legend()
+plt.grid()
+plt.savefig("2.b.pdf")
+
+
 
 # 3. FILTROS -----------------------------
 ## 3a. Filtro gaussiano
@@ -372,101 +463,6 @@ plt.axis('off')
 
 
 
-# 2. TRANSFORMADA RÁPIDA ------------------------------------
-## 2b. Manchas Solares
-### 2b.a. Período del ciclo solar
-
-import matplotlib.pyplot as plt
-from datetime import datetime
-
-# Inicializar listas vacías
-dates = []
-ssn_values = []
-
-# Leer el archivo manualmente
-with open(file_path, "r") as file:
-    lines = file.readlines()
-
-# Extraer fechas y valores de manchas solares
-for line in lines:
-    parts = line.split()
-    if len(parts) != 4:  # Saltar líneas incorrectas
-        continue
-    try:
-        # Convertir los datos numéricos
-        year, month, day, ssn = int(parts[0]), int(parts[1]), int(parts[2]), float(parts[3])
-        date = datetime(year, month, day)
-
-        # Filtrar solo datos hasta el 1 de enero de 2010
-        if date < datetime(2010, 1, 1):
-            dates.append(date)
-            ssn_values.append(ssn)
-
-    except ValueError:
-        continue  # Saltar encabezados o líneas mal formateadas
-
-# Número de datos
-N = len(ssn_values)
-
-# FFT y frecuencias
-fft_data = np.fft.fft(ssn_values)
-freqs = np.fft.fftfreq(N, d=1)  # d=1 asume separación de 1 día
-
-# Usar solo frecuencias positivas
-positive_freqs = freqs[freqs > 0]
-positive_fft = np.abs(fft_data[freqs > 0])
-
-# Graficar FFT en escala log-log
-plt.figure(figsize=(8, 5))
-plt.loglog(positive_freqs, positive_fft)
-plt.xlabel("Frecuencia (1/día)")
-plt.ylabel("Magnitud de la FFT")
-plt.title("Transformada de Fourier de las manchas solares")
-plt.grid()
-
-# Encontrar la frecuencia con mayor magnitud
-dominant_freq = positive_freqs[np.argmax(positive_fft)]
-
-# Convertir a período en años
-P_solar = 1 / dominant_freq / 365.25
-
-print(f"2.b.a) P_solar = {P_solar:.2f} años")
-
-
-
-### 2b.b. Extrapolación con suavizado
-M = min(50, len(Y))  # Asegurar que no excedemos la cantidad de coeficientes
-N = len(y)
-
-# Crear tiempo futuro desde 2012 hasta 2025
-fecha_inicio = df["date"].min()
-dias_desde_inicio = np.array((pd.date_range("2012-01-01", "2025-02-17", freq="D") - fecha_inicio).days)
-
-# Aplicar ventana de suavizado a los armónicos
-ventana = np.exp(-0.01 * np.arange(len(Y)))  # Atenuación exponencial
-Y_suavizado = Y * ventana
-
-# Asegurar que Y_suavizado y freqs tengan la forma correcta
-y_pred = np.real(
-    1/N * np.sum(
-        (Y_suavizado[:M, None] * np.exp(2j * np.pi * freqs[:M, None] * dias_desde_inicio)),
-        axis=0
-    )
-)
-
-# Obtener la predicción del día de entrega (10 de febrero de 2025)
-n_manchas_hoy = y_pred[-1]
-print(f"2.b.b) {n_manchas_hoy = }")
-
-# Graficar los datos originales y la extrapolación
-plt.figure(figsize=(10, 5))
-plt.plot(df["date"], y, label="Datos originales", alpha=0.6)
-plt.plot(pd.to_datetime("2012-01-01") + pd.to_timedelta(dias_desde_inicio, unit="D"), y_pred, label="Predicción suavizada", linestyle="dashed")
-plt.xlabel("Fecha")
-plt.ylabel("Número de manchas solares")
-plt.legend()
-plt.grid()
-plt.savefig("2.b.pdf")
 
 
 
