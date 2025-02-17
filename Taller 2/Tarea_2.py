@@ -12,11 +12,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from google.colab import drive
-drive.mount('/content/drive')
-
 # Cargar y leer el archivo de datos
-file_path = "/content/drive/MyDrive/Colab_Notebooks/metodos2/t2/list_aavso-arssn_daily.txt"
+file_path = "list_aavso-arssn_daily.txt"
 
 with open(file_path, "r") as file:
     lines = file.readlines()
