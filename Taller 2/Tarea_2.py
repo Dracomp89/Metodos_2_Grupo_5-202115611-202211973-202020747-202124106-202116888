@@ -226,7 +226,6 @@ plt.title("Transformada General de Fourier")
 plt.grid()
 
 plt.tight_layout()
-plt.show()
 
 print(f"2.a) f_fast = {f_fast:.5f} Hz; f_general = {f_general:.5f} Hz")
 
@@ -250,7 +249,6 @@ plt.title("Transformada General de Fourier (gFFT)")
 plt.grid()
 plt.tight_layout() 
 plt.savefig("2.a.pdf")
-plt.show()
 
 ## 2b. Manchas Solares
 ### 2b.a. Período del ciclo solar
@@ -283,8 +281,7 @@ for line in lines:
 
     except ValueError:
         continue  # Saltar encabezados o líneas mal formateadas
-
-# Número de datos
+     # Número de datos
 N = len(ssn_values)
 
 # FFT y frecuencias
@@ -303,6 +300,7 @@ plt.ylabel("Magnitud de la FFT")
 plt.title("Transformada de Fourier de las manchas solares")
 plt.grid()
 
+
 # Encontrar la frecuencia con mayor magnitud
 dominant_freq = positive_freqs[np.argmax(positive_fft)]
 
@@ -310,42 +308,6 @@ dominant_freq = positive_freqs[np.argmax(positive_fft)]
 P_solar = 1 / dominant_freq / 365.25
 
 print(f"2.b.a) P_solar = {P_solar:.2f} años")
-
-
-
-### 2b.b. Extrapolación con suavizado
-M = min(50, len(Y))  # Asegurar que no excedemos la cantidad de coeficientes
-N = len(y)
-
-# Crear tiempo futuro desde 2012 hasta 2025
-fecha_inicio = df["date"].min()
-dias_desde_inicio = np.array((pd.date_range("2012-01-01", "2025-02-17", freq="D") - fecha_inicio).days)
-
-# Aplicar ventana de suavizado a los armónicos
-ventana = np.exp(-0.01 * np.arange(len(Y)))  # Atenuación exponencial
-Y_suavizado = Y * ventana
-
-# Asegurar que Y_suavizado y freqs tengan la forma correcta
-y_pred = np.real(
-    1/N * np.sum(
-        (Y_suavizado[:M, None] * np.exp(2j * np.pi * freqs[:M, None] * dias_desde_inicio)),
-        axis=0
-    )
-)
-
-# Obtener la predicción del día de entrega (10 de febrero de 2025)
-n_manchas_hoy = y_pred[-1]
-print(f"2.b.b) {n_manchas_hoy = }")
-
-# Graficar los datos originales y la extrapolación
-plt.figure(figsize=(10, 5))
-plt.plot(df["date"], y, label="Datos originales", alpha=0.6)
-plt.plot(pd.to_datetime("2012-01-01") + pd.to_timedelta(dias_desde_inicio, unit="D"), y_pred, label="Predicción suavizada", linestyle="dashed")
-plt.xlabel("Fecha")
-plt.ylabel("Número de manchas solares")
-plt.legend()
-plt.grid()
-plt.savefig("2.b.pdf")
 
 
 
