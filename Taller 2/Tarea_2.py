@@ -11,7 +11,7 @@ import pandas as pd
 
 
 
-# 3. FILTROS
+# 3. FILTROS -----------------------------
 ## 3a. Filtro gaussiano
 
 # Cargar y leer el archivo de datos
@@ -73,11 +73,12 @@ plt.savefig("3.1.pdf")
 
 
 
-# 2. TRANSFORMADA RÁPIDA
+# 2. TRANSFORMADA RÁPIDA ------------------------------------
 ## 2a. Comparativa
 
 
 ## 2b. Manchas Solares
+### 2b.a. Período del ciclo solar
 
 # Leer el archivo txt, omitiendo la primera fila ("American")
 df = pd.read_csv('list_aavso-arssn_daily.txt', delimiter='\s+')
@@ -103,7 +104,7 @@ frecuencia_ciclo = freqs[pico_principal]
 P_solar = 1 / frecuencia_ciclo / 365.25  # Convertir a años
 print(f"2.b.a) {P_solar = }")
 
-# --- 2.b.b Extrapolación con suavizado ---
+### 2b.b. Extrapolación con suavizado
 M = min(50, len(Y))  # Asegurar que no excedemos la cantidad de coeficientes
 N = len(y)
 
