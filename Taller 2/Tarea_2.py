@@ -7,6 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.fft import rfft, rfftfreq, irfft
 import pandas as pd
+from scipy import fftpack
+from skimage import io, color
+
 # 1. Transformada general
 #a.
 def datos_prueba(t_max:float, dt:float, amplitudes:NDArray[float],
@@ -313,6 +316,61 @@ for i, alpha in enumerate(alpha_values):
 # Ajustar diseño y guardar la figura
 plt.tight_layout()
 plt.savefig("3.1.pdf")
+
+
+### 3b. Limpieza
+
+# Cargar imagen
+image_path = 'catto.png'
+image = io.imread(image_path)
+
+# Convertir a escala de grises (si es necesario)
+gray_image = color.rgb2gray(image)
+
+# Mostrar la imagen original
+plt.figure(figsize=(6,6))
+plt.imshow(gray_image, cmap='gray')
+plt.title('Imagen Original')
+plt.axis('off')
+plt.show()
+
+# Aplicar la Transformada de Fourier
+f_transform = fftpack.fft2(gray_image)
+f_transform_shifted = fftpack.fftshift(f_transform)  # Centrar la frecuencia en 0
+
+# Mostrar el espectro de la imagen
+magnitude_spectrum = np.abs(f_transform_shifted)
+plt.figure(figsize=(6,6))
+plt.imshow(np.log(magnitude_spectrum + 1), cmap='gray')  # +1 para evitar log(0)
+plt.title('Espectro de Frecuencia')
+plt.axis('off')
+plt.show()
+
+# Eliminar las frecuencias correspondientes al ruido periódico
+# Para este ejemplo, supondremos que el ruido está en bandas específicas, por ejemplo, cerca del centro
+rows, cols = gray_image.shape
+crow, ccol = rows // 2, cols // 2  # Centro de la imagen
+
+# Crear una máscara de paso bajo (eliminar las frecuencias altas relacionadas con el ruido)
+mask = np.ones((rows, cols))
+radius = 30  # Ajusta este valor según la imagen para capturar el ruido
+
+# Borrar las frecuencias cercanas al centro (las que podrían ser ruido)
+mask[crow-radius:crow+radius, ccol-radius:ccol+radius] = 0
+
+# Aplicar la máscara en el dominio de la frecuencia
+f_transform_shifted_filtered = f_transform_shifted * mask
+
+# Transformada inversa para obtener la imagen filtrada
+f_transform_filtered = fftpack.ifftshift(f_transform_shifted_filtered)
+image_filtered = np.abs(fftpack.ifft2(f_transform_filtered))
+
+# Mostrar la imagen filtrada
+plt.figure(figsize=(6,6))
+plt.imshow(image_filtered, cmap='gray')
+plt.title('Imagen Filtrada (Ruido Eliminado)')
+plt.axis('off')
+plt.show()
 
 
 
