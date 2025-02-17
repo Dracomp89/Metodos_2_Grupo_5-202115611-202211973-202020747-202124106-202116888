@@ -373,22 +373,21 @@ plt.savefig("3.1.pdf")
 
 ### 3b. Limpieza
 
-# Cargar imagen
-image_path = 'catto.png'
+from scipy import fftpack
+from skimage import io, color
+
+image_path = "catto.png"
 image = io.imread(image_path)
 
-# Convertir a escala de grises (si es necesario)
-gray_image = color.rgb2gray(image)
 
 # Mostrar la imagen original
 plt.figure(figsize=(6,6))
-plt.imshow(gray_image, cmap='gray')
+plt.imshow(image, cmap='gray')
 plt.title('Imagen Original')
 plt.axis('off')
-plt.show()
 
 # Aplicar la Transformada de Fourier
-f_transform = fftpack.fft2(gray_image)
+f_transform = fftpack.fft2(image)
 f_transform_shifted = fftpack.fftshift(f_transform)  # Centrar la frecuencia en 0
 
 # Mostrar el espectro de la imagen
@@ -400,7 +399,7 @@ plt.axis('off')
 
 # Eliminar las frecuencias correspondientes al ruido periódico
 # Para este ejemplo, supondremos que el ruido está en bandas específicas, por ejemplo, cerca del centro
-rows, cols = gray_image.shape
+rows, cols = image.shape
 crow, ccol = rows // 2, cols // 2  # Centro de la imagen
 
 # Crear una máscara de paso bajo (eliminar las frecuencias altas relacionadas con el ruido)
@@ -422,8 +421,6 @@ plt.figure(figsize=(6,6))
 plt.imshow(image_filtered, cmap='gray')
 plt.title('Imagen Filtrada (Ruido Eliminado)')
 plt.axis('off')
-
-
 
 
 
