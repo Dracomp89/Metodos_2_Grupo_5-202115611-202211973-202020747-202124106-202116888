@@ -6,10 +6,179 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.fft import rfft, rfftfreq, irfft
-
 import pandas as pd
+# 1. Transformada general
+#a.
+def datos_prueba(t_max:float, dt:float, amplitudes:NDArray[float],
+ frecuencias:NDArray[float], ruido:float) -> NDArray[float]:
+ ts = np.arange(0.,t_max,dt)
+ ys = np.zeros_like(ts,dtype=float)
+ for A,f in zip(amplitudes,frecuencias):
+     ys += A*np.sin(2*np.pi*f*ts)
+     ys += np.random.normal(loc=0,size=len(ys),scale=ruido) if ruido else 0
+ return ts,ys
+
+def Fourier(t:NDArray[float], y:NDArray[float], f:float) -> complex:
+ return np.sum(y*np.exp(-2j*np.pi*t*f))
 
 
+frecuencias=np.array([0.1,0.2,0.5])
+amplitudes=np.array([3,2,1])
+ruido1=0.0
+ruido2=3
+tmax=50
+dt=0.1
+x=np.arange(0.,tmax,dt)
+
+freq=np.arange(0.0,0.6,0.0001)
+
+ts1,señal1=datos_prueba(tmax,dt,amplitudes,frecuencias,ruido1)
+ts2,señal2=datos_prueba(tmax,dt,amplitudes,frecuencias,ruido2)
+
+F1=[Fourier(ts1,señal1,f) for f in freq]
+F2=[Fourier(ts2,señal2,f) for f in freq]
+
+plt.scatter(ts1, señal1)
+plt.show()
+plt.scatter(ts2, señal2)
+plt.show()
+
+fig, axs = plt.subplots(2, 1, figsize=(8, 6))  # Dos filas, una columna
+
+axs[0].plot(freq, np.abs(F1))
+axs[0].set_title("Transformada de Fourier sin ruido")
+axs[0].set_xlabel("Frecuencia")
+axs[0].set_ylabel("Amplitud")
+axs[0].grid()
+
+axs[1].plot(freq, np.abs(F2))
+axs[1].set_title("Transformada de Fourier con ruido")
+axs[1].set_xlabel("Frecuencia")
+axs[1].set_ylabel("Amplitud")
+axs[1].grid()
+plt.tight_layout()  # Ajustar para evitar superposición
+plt.savefig("1.a.pdf", dpi=300, bbox_inches='tight')
+plt.show()
+print("1.a) Se pierde resolución de los picos objetivo")
+#b
+
+frecuenciab = np.array([5])
+amplitudb = np.array([3])
+ruido1 = 0.0
+tmax = np.arange(10, 100, 10)
+dt = 0.001
+anchos=[]
+
+for i in tmax:
+    x = np.arange(0., i, dt)
+    fb = np.arange(4.7, 5.3, 0.0001)  
+    ts1b, señal1b = datos_prueba(i, dt, amplitudb, frecuenciab, ruido1)
+    
+    F1b = np.array([Fourier(ts1b, señal1b, f) for f in fb])
+    F1b_abs = np.abs(F1b)
+    pico_max = np.max(F1b_abs)
+    mitad = pico_max / 2
+    indices_cercanos = np.argsort(np.abs(F1b_abs - mitad))[:2]
+    indices_cercanos.sort()
+    widths = np.abs(fb[indices_cercanos[1]] - fb[indices_cercanos[0]])
+    anchos.append(widths)
+    
+    print(f"Ancho medio para t_max={i}: {widths:.65}")  
+
+    plt.plot(fb, F1b_abs)
+    plt.title(f"Transformada de Fourier para $t_{{max}}$ = {i}")
+    plt.xlabel("Frecuencia")
+    plt.ylabel("Amplitud")
+    plt.grid()
+    plt.show()
+
+print(anchos)
+loga = np.log(anchos)
+logt = np.log(tmax)
+def modelo(x,A,B):
+    return A*x+B
+coeficiente, _ =curve_fit(modelo,logt,loga)
+A,B=coeficiente
+print(f"Ajuste: y = {A:.4f}X+ {B:.4f}")
+
+# 🔹 Generar valores ajustados
+logt_p = np.linspace(min(logt), max(logt), 100)
+loga_p = modelo(logt_p, A, B)
+
+# 🔹 Graficar los datos y el ajuste
+plt.scatter(logt, loga, label="Datos experimentales", color="red")
+plt.plot(logt_p, loga_p, label=f"Ajuste: y = {A:.4f}X+{B:.4f}", color="blue")
+plt.xlabel("Log(t)")
+plt.ylabel("Log(Anchos)")
+plt.legend()
+plt.grid()
+plt.tight_layout() 
+plt.savefig("1.b.pdf", dpi=300, bbox_inches='tight')
+plt.show()
+
+# 2. Transformada rápida
+# a
+datos = pd.read_csv("H_field (1).csv", sep=",")
+t = datos["t"].to_numpy()
+H = datos["H"].to_numpy()
+
+dt = np.mean(np.diff(t))
+n = len(H)
+f_fft = np.fft.rfftfreq(n, dt)  
+F_fast = np.fft.rfft(H)
+indice_max_fast = np.argmax(np.abs(F_fast))  
+f_fast = f_fft[indice_max_fast]  
+
+def Fourier(t: np.ndarray, y: np.ndarray, f: float) -> complex:
+    return np.sum(y * np.exp(-2j * np.pi * t * f))
+
+f_gft=np.arange(0,6,0.005)
+F_general = np.array([Fourier(t, H, f) for f in f_gft])
+
+indice_max_general = np.argmax(np.abs(F_general))
+f_general = f_gft[indice_max_general]
+
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plt.plot(f_fft, np.abs(F_fast))
+plt.xlabel("Frecuencia (Hz)")
+plt.ylabel("Amplitud")
+plt.title("Transformada Rápida de Fourier (rFFT)")
+plt.grid()
+
+plt.subplot(1, 2, 2)
+plt.plot(f_gft, np.abs(F_general))
+plt.xlabel("Frecuencia (Hz)")
+plt.ylabel("Amplitud")
+plt.title("Transformada General de Fourier")
+plt.grid()
+
+plt.tight_layout()
+plt.show()
+
+print(f"2.a) f_fast = {f_fast:.5f} Hz; f_general = {f_general:.5f} Hz")
+
+phi_f = np.mod(f_fast * t, 1)
+phi_g = np.mod(f_general * t, 1)
+
+# Graficar los resultados
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plt.scatter(phi_f, H, s=10, label=r"$\varphi_{\mathrm{fast}}$")
+plt.xlabel("Fase")
+plt.ylabel("H")
+plt.title("Transformada Rápida de Fourier (rFFT)")
+plt.grid()
+
+plt.subplot(1, 2, 2)
+plt.scatter(phi_g, H, s=5, label=r"$\varphi_{\mathrm{general}}$")
+plt.xlabel("Fase")
+plt.ylabel("H")
+plt.title("Transformada General de Fourier (gFFT)")
+plt.grid()
+plt.tight_layout() 
+plt.savefig("2.a.pdf")
+plt.show()
 
 # 3. FILTROS -----------------------------
 ## 3a. Filtro gaussiano
