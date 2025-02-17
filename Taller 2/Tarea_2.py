@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tarea 2.py
 """
-on: workflow_dispatch
+
+
 
 
 # 3. FILTROS
