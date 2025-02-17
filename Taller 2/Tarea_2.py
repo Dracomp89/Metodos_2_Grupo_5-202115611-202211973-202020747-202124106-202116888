@@ -344,7 +344,6 @@ plt.figure(figsize=(6,6))
 plt.imshow(np.log(magnitude_spectrum + 1), cmap='gray')  # +1 para evitar log(0)
 plt.title('Espectro de Frecuencia')
 plt.axis('off')
-plt.show()
 
 # Eliminar las frecuencias correspondientes al ruido periódico
 # Para este ejemplo, supondremos que el ruido está en bandas específicas, por ejemplo, cerca del centro
@@ -370,41 +369,70 @@ plt.figure(figsize=(6,6))
 plt.imshow(image_filtered, cmap='gray')
 plt.title('Imagen Filtrada (Ruido Eliminado)')
 plt.axis('off')
-plt.show()
-
 
 
 
 # 2. TRANSFORMADA RÁPIDA ------------------------------------
-## 2a. Comparativa
-
-
 ## 2b. Manchas Solares
 ### 2b.a. Período del ciclo solar
 
-# Leer el archivo txt, omitiendo la primera fila ("American")
-df = pd.read_csv('list_aavso-arssn_daily.txt', delimiter='\s+')
+import matplotlib.pyplot as plt
+from datetime import datetime
 
-df['date'] = pd.to_datetime(df[['Year', 'Month', 'Day']])
-df = df[df["date"] < "2010-01-01"]
-df = df.sort_values("date")
+# Inicializar listas vacías
+dates = []
+ssn_values = []
 
-t = np.arange(len(df))  # Tiempo en días desde el inicio
-y = df["SSN"].values  # Número de manchas solares
+# Leer el archivo manualmente
+with open(file_path, "r") as file:
+    lines = file.readlines()
 
-Y = rfft(y)
+# Extraer fechas y valores de manchas solares
+for line in lines:
+    parts = line.split()
+    if len(parts) != 4:  # Saltar líneas incorrectas
+        continue
+    try:
+        # Convertir los datos numéricos
+        year, month, day, ssn = int(parts[0]), int(parts[1]), int(parts[2]), float(parts[3])
+        date = datetime(year, month, day)
 
-plt.plot(Y)
-plt.yscale('log')
-plt.xscale('log')
+        # Filtrar solo datos hasta el 1 de enero de 2010
+        if date < datetime(2010, 1, 1):
+            dates.append(date)
+            ssn_values.append(ssn)
 
-freqs = rfftfreq(len(y), d=1)  # Frecuencias en 1/día
+    except ValueError:
+        continue  # Saltar encabezados o líneas mal formateadas
 
-# Encontrar el pico principal
-pico_principal = np.argmax(np.abs(Y[1:])) + 1  # Evitamos freq[0]
-frecuencia_ciclo = freqs[pico_principal]
-P_solar = 1 / frecuencia_ciclo / 365.25  # Convertir a años
-print(f"2.b.a) {P_solar = }")
+# Número de datos
+N = len(ssn_values)
+
+# FFT y frecuencias
+fft_data = np.fft.fft(ssn_values)
+freqs = np.fft.fftfreq(N, d=1)  # d=1 asume separación de 1 día
+
+# Usar solo frecuencias positivas
+positive_freqs = freqs[freqs > 0]
+positive_fft = np.abs(fft_data[freqs > 0])
+
+# Graficar FFT en escala log-log
+plt.figure(figsize=(8, 5))
+plt.loglog(positive_freqs, positive_fft)
+plt.xlabel("Frecuencia (1/día)")
+plt.ylabel("Magnitud de la FFT")
+plt.title("Transformada de Fourier de las manchas solares")
+plt.grid()
+
+# Encontrar la frecuencia con mayor magnitud
+dominant_freq = positive_freqs[np.argmax(positive_fft)]
+
+# Convertir a período en años
+P_solar = 1 / dominant_freq / 365.25
+
+print(f"2.b.a) P_solar = {P_solar:.2f} años")
+
+
 
 ### 2b.b. Extrapolación con suavizado
 M = min(50, len(Y))  # Asegurar que no excedemos la cantidad de coeficientes
