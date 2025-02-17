@@ -67,5 +67,3 @@ for i, alpha in enumerate(alpha_values):
 # Ajustar diseño y guardar la figura
 plt.tight_layout()
 plt.savefig("/content/drive/MyDrive/Colab_Notebooks/metodos2/t2/3.1.pdf")
-
-print(N)
