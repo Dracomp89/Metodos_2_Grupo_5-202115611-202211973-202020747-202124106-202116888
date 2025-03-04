@@ -140,6 +140,7 @@ P_sim = 2 * np.mean(np.diff(sol.t[zero_crossings])) if len(zero_crossings) > 1 e
 print(f"2.a) P_teo = {P_teo:.5f}; P_sim = {P_sim:.5f}")
 
 # Diagnóstico: energía total y radio en función del tiempo
+"""
 plt.figure()
 plt.subplot(2, 1, 1)
 plt.plot(sol.t, 0.5 * (sol.y[1]**2 + sol.y[3]**2) - 1 / np.sqrt(sol.y[0]**2 + sol.y[2]**2))
@@ -151,6 +152,7 @@ plt.ylabel("Radio")
 plt.xlabel("Tiempo (unidades atómicas)")
 
 plt.savefig("2.a.diagnostics.pdf")
+"""
 
 # Simulación con pérdida por Larmor
 def motion_with_larmor(t, y):
@@ -195,17 +197,19 @@ fall_indices = np.where(distances < 0.1)[0]
 t_fall = time[fall_indices[0]] if len(fall_indices) > 0 else np.nan
 
 if np.isnan(t_fall):
-    print("El electrón no cayó al núcleo en el tiempo de simulación.")
+    print("2.b) El electrón no cayó al núcleo en el tiempo de simulación.")
 else:
     print(f"2.b) t_fall = {t_fall * 24.18884:.5f} as")  # Conversión a attosegundos
 
 # Mostrar y guardar gráficas con los títulos intercambiados correctamente
+"""
 plt.figure()
 plt.plot(sol_larmor[0], sol_larmor[2])
 plt.xlabel("x (a0)")
 plt.ylabel("y (a0)")
 plt.title("Órbita sin pérdida por Larmor")  # Ahora correcto
 plt.savefig("2.a.XY.pdf")
+"""
 
 plt.figure()
 plt.plot(sol.y[0], sol.y[2])
