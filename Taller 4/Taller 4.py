@@ -118,3 +118,66 @@ ani = animation.FuncAnimation(fig, actualizar, frames=num_frames, interval=50, b
 # Guardar el video
 ani.save("3.mp4", writer=animation.FFMpegWriter(fps=30))
 
+#PUNTO 2
+# Parámetros en cm
+D1 = 50  
+D2 = 50  
+wavelength = 670e-7  # (670 nm)
+A = 0.04 
+a = 0.01 
+d = 0.1  
+# Número de muestras
+N = 100000  
+
+# Muestras en x
+x_samples = np.random.uniform(-A/2, A/2, N)
+
+# Generar muestras en y 
+y_samples = np.random.choice([-d/2, d/2], size=N) + np.random.uniform(-a/2, a/2, N)
+
+# Valores de z para evaluar la intensidad
+z_values = np.linspace(-0.4, 0.4, 1000)
+
+# Evaluación de la integral de camino con Monte Carlo
+def feynman_integral(z, x_samples, y_samples, N):
+    a = (2 * np.pi / wavelength) * (D1 + D2)
+    term1 = np.exp(1j * a)
+    term2 = np.exp(1j * np.pi / (wavelength * D1) * (x_samples - y_samples) ** 2)
+    term3 = np.exp(1j * np.pi / (wavelength * D1) * (z - y_samples) ** 2)
+    integrand = term1 * term2 * term3
+    I = np.mean(integrand)
+    error = np.sqrt(np.var(integrand) / N)
+
+    return np.abs(I) ** 2, error
+
+intensidad_feynman = np.zeros(len(z_values))
+errores_feynman = np.zeros(len(z_values))
+
+for i, z in enumerate(z_values):
+    intensidad_feynman[i], errores_feynman[i] = feynman_integral(z, x_samples, y_samples, N)
+
+# Normalización por el máximo
+intensidad_feynman /= np.max(intensidad_feynman)
+
+theta = np.arctan(z_values / D2)
+clasica = (np.cos(np.pi * d / wavelength * np.sin(theta))**2 *
+           np.sinc(a / wavelength * np.sin(theta))**2)
+
+# Normalización por el máximo
+clasica /= np.max(clasica)
+
+
+plt.figure(figsize=(8, 5))
+plt.plot(z_values, intensidad_feynman, label="Integral de camino (Feynman)", linestyle="dashed")
+plt.fill_between(z_values, intensidad_feynman - errores_feynman, 
+                 intensidad_feynman + errores_feynman, alpha=0.3, color="blue")
+plt.plot(z_values, clasica, label="Modelo clásico (Fresnel)", linestyle="solid")
+plt.xlabel("Posición en la pantalla (cm)")
+plt.ylabel("Intensidad normalizada")
+plt.title("Comparación entre la integral de camino y el modelo clásico")
+plt.legend()
+plt.savefig("2.pdf", bbox_inches="tight")
+plt.show()
+
+
+
