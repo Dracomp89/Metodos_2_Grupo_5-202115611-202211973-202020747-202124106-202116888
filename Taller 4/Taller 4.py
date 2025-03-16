@@ -12,7 +12,8 @@ Original file is located at
 import numpy as np
 import matplotlib.pyplot as plt
 
-#1.a
+# 1. INTEGRACIÓN INDIRECTA
+# 1.a GENERAR DATOS ALEATORIOS
 
 def g_x(x, n=10, alpha=4/5):
     return sum(np.exp(-(x - k)**2 * k) / k**alpha for k in range(1, n+1))
@@ -40,7 +41,7 @@ plt.ylabel("Frecuencia")
 plt.title("Histograma de muestras generadas con Metropolis-Hastings")
 plt.savefig("1.a.pdf")
 
-#1.b
+# 1.b INTEGRAR
 
 def g_x_norm(x, n=10, alpha=4/5):
     return sum(np.exp(-(x - k)**2 * k) / k**(alpha + 1/2) for k in range(1, n+1))
