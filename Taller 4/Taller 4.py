@@ -54,3 +54,66 @@ std_A = (np.sqrt(np.pi) / np.sqrt(len(samples))) * np.std(f_over_g)
 
 # Imprimir resultado
 print(f"1.b) A = {A} ± {std_A}")
+
+
+
+# 3. MODELO DE ISING CON METROPOLIS-HASTINGS
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib.colors import ListedColormap
+
+# Parámetros
+N = 150  # Matriz (N x N)
+J = 0.2  # Cte. de interacción entre espines, J>0 hace que los espines
+                 # se alineen en la misma dirección (regiones homogéneas) -> ferromagnético
+beta = 10  # Inverso de la temperatura (1/k_B*T) ~ T=0.1 -> baja temp.
+num_frames = 500  # Frames
+iteraciones_por_frame = 400  # Iteraciones entre frame y frame
+
+# 1. Inicializar espines aleatorios en -1 y 1
+spins = np.random.choice([-1, 1], size=(N, N))
+
+def calcular_delta_energia(spins, i, j, J):
+  """
+  Calcula la diferencia de energía entre un espín y sus vecinos.
+  """
+  # Condiciones de frontera periódicas
+  arriba = spins[(i - 1) % N, j]
+  abajo = spins[(i + 1) % N, j]
+  izquierda = spins[i, (j - 1) % N]
+  derecha = spins[i, (j + 1) % N]
+
+  # 3. Energía con el espín actual y energía si se invierte
+  suma_vecinos = arriba + abajo + izquierda + derecha
+  delta_E = 2 * J * spins[i, j] * suma_vecinos
+  return delta_E
+
+# Configurar la figura de la animación
+fig, ax = plt.subplots()
+custom_cmap = ListedColormap(["purple", "yellow"])
+im = ax.imshow(spins, cmap=custom_cmap, vmin=-1, vmax=1)  # Mapa de colores
+
+def actualizar(frame):
+  """
+  Función que se ejecuta en cada frame de la animación usando Metropolis-Hastings.
+  """
+  global spins
+  for _ in range(iteraciones_por_frame): # 6. goto 2
+      # 2. Elegir un espín al azar
+      i, j = np.random.randint(0, N, size=2) 
+      # 3. Calcular ΔE
+      delta_E = calcular_delta_energia(spins, i, j, J)
+
+      # Condiciones de aceptación de Metropolis
+      if delta_E <= 0 or np.random.rand() < np.exp(-beta * delta_E): # Forma: if 4. or 5.: acepta la nueva conf.
+          spins[i, j] *= -1  # Cambiar el espín
+
+  im.set_array(spins)  # Actualizar la imagen
+  return [im]
+
+# Crear animación
+ani = animation.FuncAnimation(fig, actualizar, frames=num_frames, interval=50, blit=True)
+# Guardar el video
+ani.save("3.mp4", writer=animation.FFMpegWriter(fps=30))
+
