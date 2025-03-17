@@ -11,8 +11,8 @@ Original file is located at
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-# 1. INTEGRACIÓN INDIRECTA
+-
+# 1. INTEGRACIÓN INDIRECTA ---------------------------------------------------------------------------------------
 # 1.a GENERAR DATOS ALEATORIOS
 
 def g_x(x, n=10, alpha=4/5):
@@ -56,7 +56,7 @@ std_A = (np.sqrt(np.pi) / np.sqrt(len(samples))) * np.std(f_over_g)
 # Imprimir resultado
 print(f"1.b) A = {A} ± {std_A}")
 
-#PUNTO 2
+# 2. INTEGRAL DE CAMINO PARA DIFRACCIÓN DE FRESNEL ---------------------------------------------------------------
 # Parámetros en cm
 D1 = 50  
 D2 = 50  
@@ -117,7 +117,7 @@ plt.legend()
 plt.savefig("2.pdf", bbox_inches="tight")
 plt.show()
 
-# 3. MODELO DE ISING CON METROPOLIS-HASTINGS
+# 3. MODELO DE ISING CON METROPOLIS-HASTINGS --------------------------------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -177,6 +177,7 @@ ani = animation.FuncAnimation(fig, actualizar, frames=num_frames, interval=50, b
 # Guardar el video
 ani.save("3.mp4", writer=animation.FFMpegWriter(fps=30))
 
+# 4. GENERACIÓN DE LENGUAJE NATURAL CON CADENAS DE MARKOV ---------------------------------------------------------
 import re
 import unicodedata
 import numpy as np
