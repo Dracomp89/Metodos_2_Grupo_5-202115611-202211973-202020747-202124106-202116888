@@ -177,6 +177,173 @@ ani = animation.FuncAnimation(fig, actualizar, frames=num_frames, interval=50, b
 # Guardar el video
 ani.save("3.mp4", writer=animation.FFMpegWriter(fps=30))
 
+import re
+import unicodedata
+import numpy as np
+import pandas as pd
+import random
+from collections import defaultdict
+from numba import njit  
+
+
+with open('Libro.txt', 'r', encoding='utf-8') as archivo:
+    s = archivo.read()
+
+s = s.replace("\r\n", "\n").replace("\n\n", "#").replace("\n", " ").replace("#", "\n\n")
+s = unicodedata.normalize('NFKD', s)
+s = re.sub(r'[^a-zA-Z0-9\s.,;:!?\'\"()\-]', '', s)
+s = re.sub(r'\s+', ' ', s).lower()
+
+
+@njit
+def crear_ngrams(s, n):
+    return [s[i:i + n] for i in range(len(s) - n)]
+
+def construir_matriz(s, n):
+    ngrams = crear_ngrams(s, n)
+    chars = sorted(set(s))
+    
+    
+    conteo = defaultdict(lambda: defaultdict(int))
+    
+    for i in range(len(s) - n):
+        ngrama = s[i:i+n]
+        siguiente_caracter = s[i+n]
+        conteo[ngrama][siguiente_caracter] += 1
+
+    
+    F = pd.DataFrame.from_dict(conteo, orient='index').fillna(0)
+
+    
+    P = F.div(F.sum(axis=1), axis=0).fillna(0)
+
+    return P
+
+n = 5
+P = construir_matriz(s, n)
+
+print(P.head())
+
+import numpy as np
+import random
+
+caracteres_validos = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,;:!?\'\"()\- \n")
+
+def generar_texto(cadena, P, len_texto, n):
+    nuevo_texto = cadena
+    caracteres_validos_array = [c for c in P.columns if c in caracteres_validos]
+
+    while len(nuevo_texto) <= len_texto:
+        ngrama_actual = nuevo_texto[-n:]  
+        
+        if ngrama_actual in P.index:
+            
+            probabilidades = P.loc[ngrama_actual].values.flatten()  
+            
+            
+            if probabilidades.size > 0 and np.sum(probabilidades) > 0:
+                probabilidades /= np.sum(probabilidades)  
+                
+                
+                probabilidades_validas = [probabilidades[i] for i, c in enumerate(P.columns) if c in caracteres_validos]
+                
+                if len(probabilidades_validas) > 0:
+                    probabilidades_validas = np.array(probabilidades_validas) / np.sum(probabilidades_validas)
+                    nueva_letra = np.random.choice(caracteres_validos_array, p=probabilidades_validas)
+                else:
+                    nueva_letra = np.random.choice(caracteres_validos_array)
+            else:
+                nueva_letra = np.random.choice(caracteres_validos_array)
+        else:
+            nueva_letra = np.random.choice(caracteres_validos_array)
+        
+        
+        nuevo_texto += str(nueva_letra)
+
+    return nuevo_texto
+
+
+print(generar_texto('samsa', P, 1500, n))
+
+
+import pandas as pd
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+from collections import defaultdict
+
+
+with open('words_alpha.txt', 'r') as file:
+    english_words = set(word.strip().lower() for word in file.readlines())
+
+def construir_matriz(s, n):
+    conteo = defaultdict(lambda: defaultdict(int))
+    
+    for i in range(len(s) - n):
+        ngrama = s[i:i + n]
+        siguiente_caracter = s[i + n]
+        conteo[ngrama][siguiente_caracter] += 1
+
+    F = pd.DataFrame.from_dict(conteo, orient='index').fillna(0)
+    P = F.div(F.sum(axis=1).replace(0, np.nan), axis=0).fillna(0)
+    
+    return P
+
+def generar_texto(cadena, P, len_texto, n):
+    nuevo_texto = cadena
+    caracteres_validos = list("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,;:!?\'\"()\- \n")
+
+    while len(nuevo_texto.split()) < len_texto:
+        ngrama_actual = nuevo_texto[-n:]  
+
+        if ngrama_actual in P.index and P.loc[ngrama_actual].sum() > 0:
+            probabilidades = P.loc[ngrama_actual].values.flatten()
+            probabilidades /= np.sum(probabilidades)
+            nueva_letra = np.random.choice(P.columns, p=probabilidades)
+        else:
+            nueva_letra = np.random.choice(caracteres_validos)
+        
+        nuevo_texto += nueva_letra
+    
+    return nuevo_texto
+
+lista_n = list(range(1, 6))  
+Lista_resultados = []
+porcentajes_validas = []
+
+for n in lista_n:
+    P = construir_matriz(s, n)
+    texto_generado = generar_texto('samsa', P, 1500, n)
+    Lista_resultados.append(texto_generado)
+
+    with open(f"gen_text_n{n}.txt", "w") as file:
+        file.write(texto_generado)
+
+    palabras_generadas = texto_generado.split()
+    palabras_validas = [word.lower().strip(".,;:!?\'\"()-") for word in palabras_generadas]
+    validas = sum(1 for palabra in palabras_validas if palabra in english_words)
+    porcentaje = (validas / len(palabras_validas)) * 100
+    porcentajes_validas.append(porcentaje)
+
+    
+    print(f"\n==== Texto generado con n={n} ====\n")
+    print(texto_generado[:1000])  
+    print("\n====================================\n")
+
+
+plt.figure(figsize=(8, 5))
+plt.plot(lista_n, porcentajes_validas, marker='o', linestyle='-', color='b', label="Palabras válidas (%)")
+plt.xlabel("Tamaño del n-grama")
+plt.ylabel("Porcentaje de palabras válidas")
+plt.title("Porcentaje de palabras válidas generadas para cada n")
+plt.legend()
+plt.grid(True)
+plt.savefig("4.pdf")
+
+
+for i, porcentaje in enumerate(porcentajes_validas, 1):
+    print(f"Para n={i}, el {porcentaje:.2f}% de las palabras generadas son válidas.")
+
 
 
 
